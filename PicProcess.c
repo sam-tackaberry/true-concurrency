@@ -1,4 +1,5 @@
 #include "PicProcess.h"
+#include "ThreadPool.c"
 
   #define NO_RGB_COMPONENTS 3
   #define BLUR_REGION_SIZE 9
@@ -165,13 +166,64 @@
     tmp.width = pic->width;
     tmp.height = pic->height; 
     
+    /* Initialise new thread pool. */
+    struct thread_pool *thread_pool;
+    initialise_thread_pool(thread_pool);
+
     // iterate over each pixel in the picture (ignoring boundary pixels)
     for(int i = 1 ; i < tmp.width - 1; i++){
       for(int j = 1 ; j < tmp.height - 1; j++){
-        //TODO: set-up work and dispatch to a pthread
+        pthread_t thread;
+        while (!new_individual_thread(&thread, pic, &tmp, i, j)) {
+          try_join_threads(thread_pool);
+        }
+        add_to_thread_pool(thread_pool, thread);
       }
-    }    
+    }
+    join_threads(thread_pool);    
     
     // temporary picture clean-up
     clear_picture(&tmp);
+  }
+
+  bool new_individual_thread(pthread_t *thread, struct picture *pic, struct picture *tmp, int i, int j)
+  {
+    struct picture_information *inf = malloc(sizeof(struct picture_information));
+    inf->picture = pic;
+    inf->tmp = tmp;
+    inf->i = i;
+    inf->j = j;
+
+    if (pthread_create(thread, NULL, (void *(*)(void *)) blur_pixel, inf) != 0) {
+      free(inf);
+      return false;
+    }
+    return true;
+  }
+
+  void blur_pixel(struct picture_information *inf) 
+  {
+    struct pixel rgb;  
+        int sum_red = 0;
+        int sum_green = 0;
+        int sum_blue = 0;
+      
+        // check the surrounding pixel region
+        for(int n = -1; n <= 1; n++){
+          for(int m = -1; m <= 1; m++){
+            rgb = get_pixel(inf->tmp, inf->i+n, inf->j+m);
+            sum_red += rgb.red;
+            sum_green += rgb.green;
+            sum_blue += rgb.blue;
+          }
+        }
+      
+        // compute average pixel RGB value
+        rgb.red = sum_red / BLUR_REGION_SIZE;
+        rgb.green = sum_green / BLUR_REGION_SIZE;
+        rgb.blue = sum_blue / BLUR_REGION_SIZE;
+      
+        // set pixel to region average RBG value
+        set_pixel(inf->picture, inf->i, inf->j, &rgb);
+        free(inf);
   }
