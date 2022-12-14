@@ -198,6 +198,7 @@
       free(inf);
       return false;
     }
+    free(inf);
     return true;
   }
 
@@ -225,5 +226,102 @@
       
         // set pixel to region average RBG value
         set_pixel(inf->picture, inf->i, inf->j, &rgb);
-        free(inf);
+  }
+
+  void blur_picture_by_col(struct picture *pic)
+  {
+    struct picture tmp;
+    tmp.img = copy_image(pic->img);
+    tmp.width = pic->width;
+    tmp.height = pic->height; 
+    
+    /* Initialise new thread pool. */
+    struct thread_pool *thread_pool;
+    initialise_thread_pool(thread_pool);
+
+    // iterate over each pixel in the picture (ignoring boundary pixels)
+    for(int i = 1 ; i < tmp.width - 1; i++){
+      pthread_t thread;
+      while (!new_col_thread(&thread, pic, &tmp, i)) {
+        try_join_threads(thread_pool);
+      }
+      add_to_thread_pool(thread_pool, thread);
+    }
+    join_threads(thread_pool);    
+    
+    // temporary picture clean-up
+    clear_picture(&tmp);
+  }
+  
+  bool new_col_thread(pthread_t *thread, struct picture *pic, struct picture *tmp, int i) 
+  {
+    struct picture_information *inf = malloc(sizeof(struct picture_information));
+    inf->picture = pic;
+    inf->tmp = tmp;
+    inf->i = i;
+
+    if (pthread_create(thread, NULL, (void *(*)(void *)) blur_col, inf) != 0) {
+      free(inf);
+      return false;
+    }
+    return true;
+  }
+
+  void blur_col(struct picture_information *inf) 
+  {
+    struct picture tmp = *inf->tmp;
+    for (int j = 1; j < inf->tmp->height - 1; j++) {
+      inf->j = j;
+      blur_pixel(inf);
+    }
+    free(inf);
+  }
+
+  void blur_picture_by_row(struct picture *pic)
+  {
+    struct picture tmp;
+    tmp.img = copy_image(pic->img);
+    tmp.width = pic->width;
+    tmp.height = pic->height; 
+    
+    /* Initialise new thread pool. */
+    struct thread_pool *thread_pool;
+    initialise_thread_pool(thread_pool);
+
+    // iterate over each pixel in the picture (ignoring boundary pixels)
+    for(int j = 1 ; j < tmp.height - 1; j++){
+      pthread_t thread;
+      while (!new_row_thread(&thread, pic, &tmp, j)) {
+        try_join_threads(thread_pool);
+      }
+      add_to_thread_pool(thread_pool, thread);
+    }
+    join_threads(thread_pool);    
+    
+    // temporary picture clean-up
+    clear_picture(&tmp);
+  }
+
+  bool new_row_thread(pthread_t *thread, struct picture *pic, struct picture *tmp, int j) 
+  {
+    struct picture_information *inf = malloc(sizeof(struct picture_information));
+    inf->picture = pic;
+    inf->tmp = tmp;
+    inf->j = j;
+
+    if (pthread_create(thread, NULL, (void *(*)(void *)) blur_row, inf) != 0) {
+      free(inf);
+      return false;
+    }
+    return true;
+  }
+
+  void blur_row(struct picture_information *inf) 
+  {
+    struct picture tmp = *inf->tmp;
+    for (int i = 1; i < inf->tmp->width - 1; i++) {
+      inf->i = i;
+      blur_pixel(inf);
+    }
+    free(inf);
   }
