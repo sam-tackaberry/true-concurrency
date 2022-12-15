@@ -72,7 +72,6 @@ void remove_node(struct node *node)
 {
     node->prev->next = node->next;
     node->next->prev = node->prev;
-    free(node);
 }
 
 void join_threads(struct thread_pool *thread_pool)

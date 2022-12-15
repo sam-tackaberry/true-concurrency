@@ -25,17 +25,24 @@ void blur_function(void (*blur_func) (struct picture *picture));
 
     printf("Blur picture by row took on average:\n");
     blur_function(&blur_picture_by_row);
-  }
+
+    printf("Blur picture by quadrant took on average:\n");
+    blur_function(&blur_picture_by_quadrant);
+
+}
 
   void blur_function(void (*blur_func) (struct picture *pic)) 
   {
     long long sumTimes = 0;
     struct picture pic;
-    init_picture_from_file(&pic, "test_images/ducks1.jpg");
     struct timeval start, stop;
-    gettimeofday(&start, NULL);
-    blur_func(&pic);
-    gettimeofday(&stop, NULL);
-    sumTimes += (stop.tv_sec - start.tv_sec) * 1000 + (stop.tv_usec - start.tv_usec) / 1000;
+    for (int i = 0; i < 100; i++) {
+        init_picture_from_file(&pic, "test_images/ducks1.jpg");
+        gettimeofday(&start, NULL);
+        blur_func(&pic);
+        gettimeofday(&stop, NULL);
+        sumTimes += (stop.tv_sec - start.tv_sec) * 1000 + (stop.tv_usec - start.tv_usec) / 1000;
+    }
+    sumTimes /= 100;
     printf("%llu milliseconds\n", sumTimes);
   }
