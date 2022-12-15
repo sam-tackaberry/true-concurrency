@@ -12,6 +12,8 @@ void blur_function(void (*blur_func) (struct picture *picture));
 
   int main(int argc, char **argv){
 
+    /* Outputs the average run time from 100 iterations of each blur implementation. */
+
     printf("Support Code for Running the Blur Optimisation Experiments... \n");
 
     printf("Sequential blur took on average:\n");
@@ -26,8 +28,8 @@ void blur_function(void (*blur_func) (struct picture *picture));
     printf("Blur picture by row took on average:\n");
     blur_function(&blur_picture_by_row);
 
-    printf("Blur picture by quadrant took on average:\n");
-    blur_function(&blur_picture_by_quadrant);
+    printf("Blur picture by quarter took on average:\n");
+    blur_function(&blur_picture_by_quarter);
 
 }
 
@@ -36,8 +38,9 @@ void blur_function(void (*blur_func) (struct picture *picture));
     long long sumTimes = 0;
     struct picture pic;
     struct timeval start, stop;
+    /* Loops 100 times recording how long it takes to run the blur function. */
     for (int i = 0; i < 100; i++) {
-        init_picture_from_file(&pic, "test_images/ducks1.jpg");
+        init_picture_from_file(&pic, "test_images/charles.jpg");
         gettimeofday(&start, NULL);
         blur_func(&pic);
         gettimeofday(&stop, NULL);

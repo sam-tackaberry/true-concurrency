@@ -3,30 +3,8 @@
 #include <malloc.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include "ThreadPool.h"
 
-/* Linked List structure for the thread pool. */
-struct thread_pool 
-{
-    struct node *head;
-    struct node *tail;
-};
-
-/* Node structure for the thread pool. */
-struct node 
-{
-    struct node *prev;
-    struct node *next;
-    pthread_t thread;
-};
-
-
-
-bool initialise_thread_pool(struct thread_pool *thread_pool);
-struct node *new_node(pthread_t thread);
-bool add_to_thread_pool(struct thread_pool *thread_pool, pthread_t thread);
-void remove_node(struct node *node);
-void join_threads(struct thread_pool *thread_pool);
-void try_join_threads(struct thread_pool *thread_pool);
 /* Initialise the thread pool. */
 bool initialise_thread_pool(struct thread_pool *thread_pool)
 {
@@ -68,12 +46,14 @@ bool add_to_thread_pool(struct thread_pool *thread_pool, pthread_t thread)
     return true;
 }
 
+/* Remove a node from the thread pool. */
 void remove_node(struct node *node) 
 {
     node->prev->next = node->next;
     node->next->prev = node->prev;
 }
 
+/* Iterate through all threads in the thread pool and join them back to main. */
 void join_threads(struct thread_pool *thread_pool)
 {
     struct node *prev = NULL;
@@ -89,6 +69,8 @@ void join_threads(struct thread_pool *thread_pool)
         
 }
 
+/* Iterate through all threads in the thread pool and if any have terminated, join them to main, remove
+ * from the linked list and free the structure. This allows for more threads to then be created. */
 void try_join_threads(struct thread_pool *thread_pool) 
 {
     struct node *prev = NULL;
